@@ -13,7 +13,7 @@ const QUICK = [
   { label: 'Пособие', k: 'как получить пособие' },
 ];
 
-export function Assistant({ profile, chat, setChat, onChangeView }) {
+export function Assistant({ profile, jobs = JOBS, chat, setChat, onChangeView }) {
   const [value, setValue] = useState('');
   const [typing, setTyping] = useState(false);
   const endRef = useRef(null);
@@ -39,7 +39,7 @@ export function Assistant({ profile, chat, setChat, onChangeView }) {
   };
 
   const maybeJob = (msg) => {
-    const j = JOBS.find((x) => msg.toLowerCase().includes(x.region.toLowerCase()));
+    const j = jobs.find((x) => msg.toLowerCase().includes(x.region.toLowerCase()));
     return j && matchJob(j, profile).score >= 60 ? j : null;
   };
 

@@ -12,10 +12,10 @@ const STAGES = [
   { key: 'offer', label: 'Оффер', icon: PartyPopper, tone: 'text-mint-600 bg-mint-400/15' },
 ];
 
-export function Track({ apps, onApply, onChangeView }) {
+export function Track({ apps, jobs = JOBS, onApply, onChangeView }) {
   const jobsWithStage = useMemo(() => {
-    return JOBS.map((j) => ({ job: j, stage: apps[j.id]?.stage ?? null })).filter((x) => x.stage);
-  }, [apps]);
+    return jobs.map((j) => ({ job: j, stage: apps[j.id]?.stage ?? null })).filter((x) => x.stage);
+  }, [apps, jobs]);
 
   const inPipeline = jobsWithStage.filter((x) => ['applied', 'interview'].includes(x.stage)).length;
   const offers = jobsWithStage.filter((x) => x.stage === 'offer').length;

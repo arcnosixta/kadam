@@ -5,8 +5,7 @@ import {
   Sparkles, Target, Users, Zap,
 } from 'lucide-react';
 import { Button, Logo, cn } from '../components/ui';
-
-const people = ['Айгерім', 'Нурбек', 'Мария', 'Арман', 'Гульмира'];
+import { AuthModal } from '../components/AuthModal';
 
 function Counter({ to, suffix = '', decimals = 0 }) {
   return (
@@ -18,17 +17,17 @@ function Counter({ to, suffix = '', decimals = 0 }) {
 
 export function Landing({ onEnter }) {
   const [scrolled, setScrolled] = useState(false);
-  const [heroTick, setHeroTick] = useState(0);
+  const [authRole, setAuthRole] = useState(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
-    const t = setInterval(() => setHeroTick((x) => x + 1), 2800);
-    return () => { window.removeEventListener('scroll', onScroll); clearInterval(t); };
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const goRole = (role) => onEnter(role, people[heroTick % people.length]);
+  const goRole = (role) => setAuthRole(role);
+  const goDemo = (role, name) => { setAuthRole(null); onEnter({ role, name }); };
 
   return (
     <div className="min-h-screen bg-ink-50 font-sans">
@@ -73,7 +72,7 @@ export function Landing({ onEnter }) {
                 <Button size="lg" onClick={() => goRole('worker')}>
                   Ищу работу <ArrowRight className="h-5 w-5" />
                 </Button>
-                <Button size="lg" variant="light" onClick={() => onEnter('employer', 'ТОО «NurGroup»')}>
+                <Button size="lg" variant="light" onClick={() => goRole('employer')}>
                   <Building2 className="h-5 w-5 text-violet-500" /> Нанимаю сотрудников
                 </Button>
               </div>
@@ -187,12 +186,12 @@ export function Landing({ onEnter }) {
             <RoleCard
               icon={Building2} iconCls="from-violet-500 to-fuchsia-600"
               tag="Для бизнеса" title="Нанимаю людей" points={['Пост вакансии за 30 секунд', 'ИИ-сортировка кандидатов', 'Готовые вопросы для интервью']}
-              cta="Войти как работодатель" onClick={() => onEnter('employer', 'ТОО «NurGroup»')}
+              cta="Войти как работодатель" onClick={() => goRole('employer')}
             />
             <RoleCard
               icon={Landmark} iconCls="from-emerald-500 to-teal-600"
               tag="Для структур занятости" title="Управляю рынком" points={['Аналитика по регионам и профессиям', 'Контроль программ занятости', 'Модерация и антифрод']}
-              cta="Войти как администратор" onClick={() => onEnter('admin', 'Оператор рынка')}
+              cta="Войти как администратор" onClick={() => goRole('admin')}
             />
           </div>
         </div>
@@ -274,7 +273,7 @@ export function Landing({ onEnter }) {
                 <Button size="lg" variant="mint" onClick={() => goRole('worker')}>
                   Начать бесплатно <ArrowRight className="h-5 w-5" />
                 </Button>
-                <Button size="lg" variant="light" onClick={() => onEnter('employer', 'ТОО «NurGroup»')}>Нанять первых сотрудников</Button>
+                <Button size="lg" variant="light" onClick={() => goRole('employer')}>Нанять первых сотрудников</Button>
               </div>
             </div>
           </div>
@@ -305,11 +304,20 @@ export function Landing({ onEnter }) {
             </div>
           </div>
           <div className="mt-10 flex flex-col items-center justify-between gap-2 border-t border-ink-100 pt-6 text-xs text-ink-400 sm:flex-row">
-            <p>© 2026 Kadam.ai — прототип. Данные рынка: открытые источники, 2026.</p>
-            <p className="inline-flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-amber-400" /> Работает на ИИ в браузере, ничего не отправляется на сервер</p>
+            <p>© 2026 Kadam.ai. Данные рынка: открытые источники, 2026.</p>
+            <p className="inline-flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-amber-400" /> ИИ обрабатывает данные локально в браузере</p>
           </div>
         </div>
       </footer>
+
+      {authRole && (
+        <AuthModal
+          role={authRole}
+          onClose={() => setAuthRole(null)}
+          onEnter={onEnter}
+          onDemo={goDemo}
+        />
+      )}
     </div>
   );
 }

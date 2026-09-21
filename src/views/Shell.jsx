@@ -8,7 +8,7 @@ const ROLE_META = {
   admin: { label: 'Администратор', tone: 'dark' },
 };
 
-export function Shell({ user, nav, active, onNav, onExit, children, header }) {
+export function Shell({ user, nav, active, onNav, onExit, children, header, loading = false }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const meta = ROLE_META[user.role];
 
@@ -85,7 +85,19 @@ export function Shell({ user, nav, active, onNav, onExit, children, header }) {
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+          {loading ? (
+            <div className="grid h-[60vh] place-items-center">
+              <div className="text-center">
+                <svg className="mx-auto h-8 w-8 animate-spin text-brand-500" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-90" fill="currentColor" d="M12 2a10 10 0 0 1 10 10h-4a6 6 0 0 0-6-6V2z" />
+                </svg>
+                <p className="mt-3 text-sm font-semibold text-ink-500">Загружаем данные из Supabase…</p>
+              </div>
+            </div>
+          ) : children}
+        </main>
       </div>
     </div>
   );

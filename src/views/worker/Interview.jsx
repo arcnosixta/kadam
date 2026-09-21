@@ -5,8 +5,8 @@ import { interviewPrep } from '../../lib/ai';
 import { JOBS } from '../../data/jobs';
 import { cn } from '../../components/ui';
 
-export function Interview({ profile }) {
-  const job = useMemo(() => JOBS.find((j) => j.id === 8) ?? JOBS[0], []);
+export function Interview({ profile, jobs = JOBS }) {
+  const job = useMemo(() => jobs.find((j) => j.id === 8) ?? jobs[0], [jobs]);
   const prep = interviewPrep(job, profile);
   const [step, setStep] = useState(0);
   const [answer, setAnswer] = useState('');

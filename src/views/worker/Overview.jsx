@@ -5,6 +5,7 @@ import {
 import { Badge, Button, Card, Progress, ProgressRing, Avatar } from '../../components/ui';
 import { rankedMatches, skillGapReport, fmt } from '../../lib/ai';
 import { PROGRAMS } from '../../data/stats';
+import { JOBS } from '../../data/jobs';
 import { FitBadge } from './parts';
 
 const STEPS = [
@@ -14,8 +15,8 @@ const STEPS = [
   { done: false, label: 'Собеседование с работодателем' },
 ];
 
-export function Overview({ profile, apps, chat, onChangeView, onOpenJob }) {
-  const top = rankedMatches(profile).slice(0, 3);
+export function Overview({ profile, apps, chat, jobs = JOBS, onChangeView, onOpenJob }) {
+  const top = rankedMatches(profile, jobs).slice(0, 3);
   const gaps = skillGapReport(profile);
   const appsCount = Object.values(apps).length;
   const interviews = Object.values(apps).filter((a) => a.stage === 'interview').length;

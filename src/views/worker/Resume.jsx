@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Copy, Download, FileCheck2, Lock, Pencil, Sparkles, X } from 'lucide-react';
+import { Copy, FileCheck2, Lock, Pencil, Sparkles, X } from 'lucide-react';
 import { Badge, Button, Card, Chip, Field, Input, Select, Textarea } from '../../components/ui';
 import { buildResume, skillGapReport } from '../../lib/ai';
 import { cn } from '../../components/ui';
@@ -7,11 +7,15 @@ import { cn } from '../../components/ui';
 const SKILL_POOL = ['бухгалтерия', '1c', 'excel', 'word', 'вождение', 'сварка', 'продажи', 'кассы', 'маркетинг', 'контент', 'дизайн', 'кулинария', 'швейное дело', 'строительство', 'сборка', 'интернет', 'телефония', 'медсестра', 'работа с детьми', 'менеджмент'];
 const ROLE_POOL = ['Бухгалтер / ассистент', 'Продавец', 'СММ / контент', 'Водитель', 'Сварщик', 'Швея', 'Повар', 'Оператор линии', 'Разнорабочий', 'Официант'];
 
-export function Resume({ profile }) {
+export function Resume({ profile, onSave }) {
   const [p, setP] = useState(profile);
   const [targetRole, setTargetRole] = useState(profile.desiredRole);
   const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [born, setBorn] = useState(false);
+
+  // Синхронизация с внешними изменениями профиля не требуется: профиль приходит
+  // из сессии/стейта родителя, изменение пишется обратно через onSave.
 
   const resume = buildResume({
     ...p, desiredRole: targetRole, skills: p.skills.length ? p.skills : profile.skills,
@@ -21,6 +25,12 @@ export function Resume({ profile }) {
     const t = setTimeout(() => setBorn(true), 300);
     return () => clearTimeout(t);
   }, []);
+
+  const save = () => {
+    onSave?.({ ...p, desiredRole: targetRole });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1800);
+  };
 
   const toggleSkill = (s) => {
     setP((prev) => ({
@@ -115,7 +125,7 @@ export function Resume({ profile }) {
             <p className="text-sm font-semibold text-ink-500">Превью для вакансии «{targetRole}»</p>
             <div className="flex items-center gap-2">
               <Button size="sm" variant="light" onClick={copy}>{copied ? 'Скопировано!' : <><Copy className="h-4 w-4" /> Скопировать</>}</Button>
-              <Button size="sm" variant="light"><Download className="h-4 w-4" /> PDF</Button>
+              <Button size="sm" variant={saved ? 'mint' : 'primary'} onClick={save}>{saved ? <><FileCheck2 className="h-4 w-4" /> Сохранено</> : <><FileCheck2 className="h-4 w-4" /> Сохранить профиль</>}</Button>
             </div>
           </div>
 
@@ -159,7 +169,7 @@ export function Resume({ profile }) {
             <div className="mt-6 rounded-2xl bg-gradient-to-r from-brand-500/10 to-violet-500/10 p-4">
               <p className="text-[13px] font-bold text-brand-700">Безопасность данных</p>
               <p className="mt-1 flex items-center gap-1.5 text-xs text-ink-500">
-                <Lock className="h-3.5 w-3.5" /> Резюме хранится локально в браузере и передаётся работодателю только после вашего согласия.
+                <Lock className="h-3.5 w-3.5" /> Резюме хранится в вашем аккаунте Supabase (защищено RLS) и передаётся работодателю только после вашего согласия.
               </p>
             </div>
           </div>

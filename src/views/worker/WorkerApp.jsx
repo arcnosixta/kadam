@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Home, Sparkles, FileText, MessageSquareText, ClipboardList, Search, BookOpen,
 } from 'lucide-react';
 import { Shell } from '../Shell';
 import { DEMO_WORKER } from '../../lib/ai';
+import { JOBS } from '../../data/jobs';
+import { store } from '../../lib/store';
 import { Overview } from './Overview';
 import { Matches } from './Matches';
 import { Resume } from './Resume';
@@ -13,29 +15,60 @@ import { Assistant } from './Assistant';
 
 export function WorkerApp({ user, onExit, notify }) {
   const [view, setView] = useState('overview');
-  const [profile] = useState({ ...DEMO_WORKER, name: user.name ?? DEMO_WORKER.name });
+  const [profile, setProfile] = useState({
+    ...DEMO_WORKER,
+    name: user.name ?? DEMO_WORKER.name,
+    ...(user.profile ?? {}),
+  });
   const [apps, setApps] = useState({});
+  const [jobs, setJobs] = useState(JOBS);
+  const [loading, setLoading] = useState(user.authed);
   const [chat, setChat] = useState([
     { from: 'ai', text: `Здравствуйте, ${mutFirstName(user.name)}! Я Айла — ваш ИИ-ассистент. Готова помочь найти работу. Хотите посмотреть подборки вакансий?` },
   ]);
   const [activeJob, setActiveJob] = useState(null);
 
-  const apply = (jobId) => {
-    setApps((a) => {
-      const cur = a[jobId]?.stage ?? 'saved';
-      const next = cur === 'saved' ? 'applied' : cur === 'applied' ? 'interview' : cur === 'interview' ? 'offer' : 'offer';
-      return { ...a, [jobId]: { stage: next, at: new Date().toLocaleDateString('ru-RU') } };
-    });
-    notify(nextStageNotify(apps[jobId]?.stage));
+  useEffect(() => {
+    if (!user.authed) return;
+    let alive = true;
+    (async () => {
+      const [prof, market, application] = await Promise.all([
+        store.getProfile(user.id),
+        store.listJobs(),
+        store.listApplications(user.id),
+      ]);
+      if (!alive) return;
+      setProfile((p) => ({ ...p, ...(prof ?? {}), name: prof?.name ?? p.name }));
+      setJobs(market);
+      setApps(application);
+      setLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [user.id, user.authed]);
+
+  const persist = (jobId, stage) => {
+    if (!user.authed) return Promise.resolve();
+    return store.setApplication(jobId, stage, user.id);
   };
 
-  const saveJob = (jobId) => {
+  const apply = async (jobId) => {
+    const cur = apps[jobId]?.stage ?? 'saved';
+    const next = cur === 'saved' ? 'applied' : cur === 'applied' ? 'interview' : cur === 'interview' ? 'offer' : 'offer';
+    await persist(jobId, next);
+    setApps((a) => ({ ...a, [jobId]: { stage: next, at: new Date().toLocaleDateString('ru-RU') } }));
+    notify(nextStageNotify(cur));
+  };
+
+  const saveJob = async (jobId) => {
+    await persist(jobId, 'saved');
     setApps((a) => (a[jobId] ? a : { ...a, [jobId]: { stage: 'saved', at: '-' } }));
     notify('Вакансия сохранена в «Мои отклики»');
   };
 
-  const viewedBy = apps;
-  void viewedBy;
+  const saveProfile = async (nextProfile) => {
+    setProfile(nextProfile);
+    if (user.authed) await store.updateProfile({ ...nextProfile, id: user.id, role: 'worker' });
+  };
 
   const activeCount = Object.values(apps).filter((a) => ['applied', 'interview'].includes(a.stage)).length;
 
@@ -51,17 +84,18 @@ export function WorkerApp({ user, onExit, notify }) {
 
   return (
     <Shell
-      user={{ ...user, initials: profile.initials, color: profile.avatarColor }}
+      user={{ ...user, initials: profile.initials, color: profile.avatarColor, authed: user.authed }}
       nav={nav} active={view} onNav={setView} onExit={onExit}
-      header={<span className="hidden rounded-xl bg-mint-400/15 px-3 py-1.5 text-xs font-bold text-mint-600 md:inline">Задача: первый оффер за 21 день</span>}
+      loading={loading}
+      header={<span className="hidden rounded-xl bg-mint-400/15 px-3 py-1.5 text-xs font-bold text-mint-600 md:inline">{user.authed ? 'Аккаунт подключён' : 'Демо-режим · данные не сохраняются'}</span>}
     >
-      {view === 'overview' && <Overview profile={profile} apps={apps} chat={chat} onChangeView={setView} onOpenJob={setActiveJob} />}
-      {view === 'matches' && <Matches profile={profile} activeJob={activeJob} onOpen={setActiveJob} onApply={apply} onSave={saveJob} apps={apps} onChat={() => setView('assistant')} />}
-      {view === 'search' && <Matches profile={profile} activeJob={activeJob} onOpen={setActiveJob} onApply={apply} onSave={saveJob} apps={apps} mode="search" onChat={() => setView('assistant')} />}
-      {view === 'resume' && <Resume profile={profile} />}
-      {view === 'interview' && <Interview profile={profile} />}
-      {view === 'track' && <Track apps={apps} profile={profile} onApply={apply} onChangeView={setView} />}
-      {view === 'assistant' && <Assistant profile={profile} chat={chat} setChat={setChat} onChangeView={setView} />}
+      {view === 'overview' && <Overview profile={profile} apps={apps} chat={chat} jobs={jobs} onChangeView={setView} onOpenJob={setActiveJob} />}
+      {view === 'matches' && <Matches profile={profile} activeJob={activeJob} jobs={jobs} onOpen={setActiveJob} onApply={apply} onSave={saveJob} apps={apps} onChat={() => setView('assistant')} />}
+      {view === 'search' && <Matches profile={profile} activeJob={activeJob} jobs={jobs} onOpen={setActiveJob} onApply={apply} onSave={saveJob} apps={apps} mode="search" onChat={() => setView('assistant')} />}
+      {view === 'resume' && <Resume profile={profile} onSave={saveProfile} />}
+      {view === 'interview' && <Interview profile={profile} jobs={jobs} />}
+      {view === 'track' && <Track apps={apps} profile={profile} jobs={jobs} onApply={apply} onChangeView={setView} />}
+      {view === 'assistant' && <Assistant profile={profile} jobs={jobs} chat={chat} setChat={setChat} onChangeView={setView} />}
     </Shell>
   );
 }

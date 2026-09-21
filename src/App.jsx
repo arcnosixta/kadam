@@ -1,15 +1,40 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Landing } from './views/Landing';
 import { WorkerApp } from './views/worker/WorkerApp';
 import { EmployerApp } from './views/employer/EmployerApp';
 import { AdminApp } from './views/admin/AdminApp';
+import { auth } from './lib/auth';
 
 export default function App() {
   const [session, setSession] = useState(null);
   const [flash, setFlash] = useState(null);
 
-  const enter = (role, name) => {
-    setSession({ role, name, start: Date.now() });
+  // Восстановление сессии + подписка на вход/выход из Supabase.
+  useEffect(() => {
+    let active = true;
+    auth.getSession().then((s) => { if (active && s) setSession(s); });
+    const unsub = auth.onAuthChange(async (s) => {
+      if (!active) return;
+      setSession((cur) => {
+        if (!cur && !s) return null;
+        return s;
+      });
+    });
+    return () => { active = false; unsub(); };
+  }, []);
+
+  const enter = (entry) => {
+    if (entry?.authed) {
+      setSession(entry);
+      return;
+    }
+    // Демо-вход без аккаунта.
+    setSession({ role: entry.role, name: entry.name, start: Date.now(), authed: false });
+  };
+
+  const exit = async () => {
+    await auth.signOut();
+    setSession(null);
   };
 
   const myFlash = (msg) => {
@@ -31,13 +56,13 @@ export default function App() {
       {!session && <Landing onEnter={enter} />}
 
       {session?.role === 'worker' && (
-        <WorkerApp user={session} onExit={() => setSession(null)} notify={myFlash} />
+        <WorkerApp user={session} onExit={exit} notify={myFlash} />
       )}
       {session?.role === 'employer' && (
-        <EmployerApp user={session} onExit={() => setSession(null)} notify={myFlash} />
+        <EmployerApp user={session} onExit={exit} notify={myFlash} />
       )}
       {session?.role === 'admin' && (
-        <AdminApp user={session} onExit={() => setSession(null)} notify={myFlash} />
+        <AdminApp user={session} onExit={exit} notify={myFlash} />
       )}
     </>
   );

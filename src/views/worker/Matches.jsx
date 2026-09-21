@@ -10,13 +10,13 @@ import { cn } from '../../components/ui';
 
 const FILTERS = ['Все', 'Мой регион', 'Удалённо', '> ожидаемой зарплаты'];
 
-export function Matches({ profile, activeJob, onOpen, onApply, onSave, apps, mode = 'matches', onChat }) {
+export function Matches({ profile, activeJob, jobs = JOBS, onOpen, onApply, onSave, apps, mode = 'matches', onChat }) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('Все');
   const [minScore, setMinScore] = useState(0);
   const [detail, setDetail] = useState(activeJob ?? null);
 
-  const ranked = useMemo(() => rankedMatches(profile, mode === 'search' ? JOBS : JOBS), [profile, mode]);
+  const ranked = useMemo(() => rankedMatches(profile, jobs), [profile, jobs]);
 
   const filtered = ranked
     .filter((j) => {
