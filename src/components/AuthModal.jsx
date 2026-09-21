@@ -71,7 +71,7 @@ export function AuthModal({ role, onClose, onEnter, onDemo }) {
         {!auth.isReady() ? (
           <div className="mt-6 space-y-4">
             <div className="rounded-2xl bg-amber-400/12 p-4 text-sm text-amber-800 ring-1 ring-amber-500/20">
-              Бэкенд ещё не настроен (нет переменных <code className="font-mono">VITE_SUPABASE_URL</code>/<code className="font-mono">VITE_SUPABASE_ANON_KEY</code>). Доступен только демо-режим.
+              Бэкенд ещё не настроен: пропущены один или оба пункта — <code className="font-mono">VITE_SUPABASE_URL</code> / <code className="font-mono">VITE_SUPABASE_ANON_KEY</code>. Доступен только демо-режим.
             </div>
             <Button className="w-full" onClick={demoEnter}>
               <Sparkles className="h-4 w-4" /> Продолжить в демо-режиме
